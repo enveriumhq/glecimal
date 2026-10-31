@@ -3,11 +3,9 @@
 [![Package Version](https://img.shields.io/hexpm/v/glecimal)](https://hex.pm/packages/glecimal)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/glecimal/)
 
-**Exact decimals for Gleam, built for money and audit.** Parse, compute, round,
-allocate and format amounts in pure Gleam, with the same 128-digit results on
+**A pure-Gleam exact-decimal library for money and audit.** Parse, compute,
+round, allocate, convert and format amounts, with the same 128-digit results on
 Erlang and JavaScript.
-
-Made for the audit-grade applications at [enverium.com](https://enverium.com).
 
 - **Exact, or explicit about it.** Addition, subtraction and multiplication are
   exact. Division, rounding and powers take the scale to keep and a named
@@ -23,7 +21,7 @@ Made for the audit-grade applications at [enverium.com](https://enverium.com).
   hold, so whatever `to_string` writes reads back unchanged.
 - **Money that adds up.** Allocation never loses a cent. `Money` holds the ISO
   4217 currencies at their minor units and never mixes them.
-- **Checked against an independent oracle.** 11,241 vectors computed by
+- **Checked against an independent oracle.** 11,658 vectors computed by
   Python's `decimal` module pass on both targets, with property tests beside
   them.
 
@@ -116,6 +114,16 @@ glecimal.round(amount, scale: 2, rounding: HalfEven)
 glecimal.divide(ten, by: three, scale: 2, rounding: HalfEven)  // -> Ok(3.33)
 ```
 
+When you need what is left over rather than a rounded quotient,
+`divide_with_remainder` truncates the quotient and returns the exact
+remainder, so `quotient × divisor + remainder` is the dividend:
+
+```gleam
+// How many shares at 33.33 does 1000.00 buy, and what is left?
+glecimal.divide_with_remainder(cash, by: price, scale: 0)
+// -> Ok(#(30, 0.10))
+```
+
 ### Products that round once
 
 `multiply` is exact, so its scale is the sum of the operands' scales and can
@@ -198,8 +206,19 @@ pub fn invoice() -> Result(List(money.Money), money.MoneyError) {
 Adding `BRL` to `USD` is `CurrencyMismatch`. `money.new` refuses an amount
 with nonzero digits beyond its currency's minor units (`WouldRound`);
 `money.new_rounded` takes a rounding, and `money.multiply` rounds the exact
-product once. `money.to_string` writes the audit form `BRL 214.39`, and
-`money.parse` reads it back.
+product once. `money.zero(in: currency.brl)` is `BRL 0.00`, and never fails.
+`money.to_string` writes the audit form `BRL 214.39`, and `money.parse` reads
+it back.
+
+`money.convert` changes currency at a rate, the units of the target currency
+per unit of the source, and rounds the exact product once to the target's
+minor units:
+
+```gleam
+money.convert(price, to: currency.usd, at: rate, rounding: HalfEven)
+// BRL 199.90 at 0.1834 -> Ok(USD 36.66)
+// the same price in JPY at 27.3851 -> Ok(JPY 5474), in BHD at 0.06903 -> Ok(BHD 13.799)
+```
 
 ### Display and forms
 
@@ -221,8 +240,10 @@ notation.parse("0.500", notation.brazilian)        // -> Error(InvalidGrouping(p
 let assert Ok(swiss) = notation.new(decimal_separator: ".", group_separator: "'")
 ```
 
-A notation carries separators only: add the currency symbol yourself, and
-`rescale` to two places before formatting an amount.
+A notation carries separators only: add the currency symbol yourself.
+`money.format(price, notation.brazilian)` writes a `Money` amount at its
+currency's scale (`1.234,50`); a plain decimal formats at its own scale, so
+`rescale` it to two places first.
 
 ### JSON
 
@@ -280,12 +301,14 @@ operation, a power at its bound, takes tens of milliseconds.
 
 ## What the checks hold
 
-- **11,241 vectors** from Python's `decimal` module (`scripts/vectors.py`), an
+- **11,658 vectors** from Python's `decimal` module (`scripts/vectors.py`), an
   oracle independent of this code, cover parsing, arithmetic, comparison,
-  rounded products, division and rounding in every mode, rescaling, powers and
-  allocation. They pass on Erlang and on JavaScript.
+  rounded products, division and rounding in every mode, division with
+  remainder, rescaling, powers and allocation. They pass on Erlang and on
+  JavaScript.
 - **Property tests** (qcheck): text round-trips, computed values read back,
-  rounded products match multiply-then-round, division undoes multiplication, rounding is idempotent and bracketed by `Floor` and
+  rounded products match multiply-then-round, division with remainder is
+  exact, conversion rounds once, division undoes multiplication, rounding is idempotent and bracketed by `Floor` and
   `Ceiling`, allocation adds up and stays within one unit of every exact share,
   money splits add up, notation round-trips, and `parse` never crashes on
   arbitrary text.
@@ -300,3 +323,8 @@ build on both targets.
 ## Licence
 
 Apache-2.0.
+
+## About
+
+glecimal is built and maintained by [Enverium](https://enverium.com), a
+sustainability reporting platform, for its audit-grade applications.

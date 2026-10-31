@@ -164,6 +164,50 @@ pub fn division_undoes_multiplication_test() {
   }
 }
 
+pub fn division_with_remainder_is_exact_test() {
+  use #(a, b, scale) <- qcheck.given(qcheck.tuple3(
+    decimal(30, 20),
+    decimal(20, 20),
+    qcheck.bounded_int(0, 30),
+  ))
+  case glecimal.is_zero(b) {
+    True -> Nil
+    False -> {
+      let assert Ok(#(quotient, remainder)) =
+        glecimal.divide_with_remainder(a, by: b, scale:)
+      let assert Ok(taken) = glecimal.multiply(quotient, b)
+      let assert Ok(whole) = glecimal.add(taken, remainder)
+      assert glecimal.compare(whole, a) == order.Eq
+      // Smaller than one 10^-scale unit of the divisor, on the dividend's side.
+      let assert Ok(unit) = glecimal.from_minor_units(1, scale:)
+      let assert Ok(step) = glecimal.multiply(unit, glecimal.absolute_value(b))
+      assert glecimal.compare(glecimal.absolute_value(remainder), step)
+        == order.Lt
+      assert glecimal.is_zero(remainder)
+        || glecimal.is_negative(remainder) == glecimal.is_negative(a)
+    }
+  }
+}
+
+pub fn conversion_rounds_the_exact_product_once_test() {
+  use #(units, rate, rounding) <- qcheck.given(qcheck.tuple3(
+    qcheck.bounded_int(-1_000_000_000, 1_000_000_000),
+    decimal(4, 10),
+    rounding(),
+  ))
+  let assert Ok(amount) = money.from_minor_units(units, in: currency.brl)
+  let assert Ok(converted) =
+    money.convert(amount, to: currency.bhd, at: rate, rounding:)
+  assert Ok(money.amount(converted))
+    == glecimal.multiply_rounded(
+      money.amount(amount),
+      by: rate,
+      scale: 3,
+      rounding:,
+    )
+  assert money.currency(converted) == currency.bhd
+}
+
 pub fn rounding_is_idempotent_and_bracketed_test() {
   use #(value, scale, rounding) <- qcheck.given(qcheck.tuple3(
     decimal(30, 20),

@@ -30,7 +30,7 @@ pub fn vectors_test() {
         Error(message) -> Ok(message)
       }
     })
-  assert list.length(cases) > 11_000
+  assert list.length(cases) > 11_600
   assert list.take(failures, 10) == []
 }
 
@@ -91,6 +91,18 @@ fn run(op: String, vector: Dynamic) -> Result(Result(String, String), String) {
       use scale <- result.try(field(vector, "scale", decode.int))
       use rounding <- result.try(rounding(vector))
       Ok(arithmetic(glecimal.divide(a, by: b, scale:, rounding:)))
+    }
+    "divide_with_remainder" -> {
+      use a <- result.try(operand(vector, "a"))
+      use b <- result.try(operand(vector, "b"))
+      use scale <- result.try(field(vector, "scale", decode.int))
+      Ok(
+        glecimal.divide_with_remainder(a, by: b, scale:)
+        |> result.map(fn(pair) {
+          glecimal.to_string(pair.0) <> "," <> glecimal.to_string(pair.1)
+        })
+        |> result.map_error(arithmetic_category),
+      )
     }
     "round" -> {
       use a <- result.try(operand(vector, "a"))

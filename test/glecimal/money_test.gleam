@@ -8,6 +8,7 @@ import glecimal/money.{
   Arithmetic, CurrencyMismatch, InvalidAmount, MalformedText,
   UnknownCurrencyCode,
 }
+import glecimal/notation
 
 fn d(text: String) -> Decimal {
   let assert Ok(value) = glecimal.parse(text)
@@ -128,4 +129,33 @@ pub fn decoder_test() {
 pub fn messages_test() {
   assert money.describe_error(CurrencyMismatch(currency.brl, currency.usd))
     == "expected BRL, found USD"
+}
+
+pub fn convert_rounds_once_into_the_target_scale_test() {
+  let assert Ok(price) = money.from_minor_units(19_990, in: currency.brl)
+  let convert = fn(target, rate) {
+    money.convert(price, to: target, at: d(rate), rounding: HalfEven)
+    |> result.map(money.to_string)
+  }
+  assert convert(currency.usd, "0.1834") == Ok("USD 36.66")
+  assert convert(currency.jpy, "27.3851") == Ok("JPY 5474")
+  assert convert(currency.bhd, "0.06903") == Ok("BHD 13.799")
+  assert money.convert(
+      money.negate(price),
+      to: currency.usd,
+      at: d("0.1834"),
+      rounding: HalfEven,
+    )
+    |> result.map(money.to_string)
+    == Ok("USD -36.66")
+}
+
+pub fn zero_and_format_test() {
+  assert money.to_string(money.zero(in: currency.brl)) == "BRL 0.00"
+  assert money.to_string(money.zero(in: currency.jpy)) == "JPY 0"
+  assert money.from_minor_units(0, in: currency.brl)
+    == Ok(money.zero(in: currency.brl))
+  let assert Ok(amount) = money.from_minor_units(123_450, in: currency.brl)
+  assert money.format(amount, notation.brazilian) == "1.234,50"
+  assert money.format(amount, notation.english) == "1,234.50"
 }

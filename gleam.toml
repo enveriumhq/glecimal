@@ -1,9 +1,9 @@
 name = "glecimal"
-version = "1.0.0"
+version = "1.1.0"
 target = "erlang"
 gleam = ">= 1.11.0"
 
-description = "Exact decimals for money and audit: 128 digits on Erlang and JavaScript, no floats, no panics, and every rounding named."
+description = "A pure-Gleam exact-decimal library for money and audit: 128 digits on Erlang and JavaScript, no floats, and every rounding named."
 
 licences = ["Apache-2.0"]
 
@@ -11,6 +11,7 @@ repository = { type = "github", user = "enveriumhq", repo = "glecimal" }
 links = [
   { title = "Repository", href = "https://github.com/enveriumhq/glecimal" },
   { title = "Roadmap", href = "https://github.com/enveriumhq/glecimal/blob/main/ROADMAP.md" },
+  { title = "Enverium", href = "https://enverium.com" },
 ]
 
 [dependencies]

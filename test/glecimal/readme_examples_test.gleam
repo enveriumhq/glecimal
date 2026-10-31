@@ -79,6 +79,14 @@ pub fn division_test() {
     == Ok("3.33")
 }
 
+pub fn division_with_remainder_test() {
+  assert glecimal.divide_with_remainder(d("1000.00"), by: d("33.33"), scale: 0)
+    |> result.map(fn(pair) {
+      #(glecimal.to_string(pair.0), glecimal.to_string(pair.1))
+    })
+    == Ok(#("30", "0.10"))
+}
+
 pub fn products_that_round_once_test() {
   let price = d("19.90")
   let assert Ok(rate) =
@@ -145,6 +153,20 @@ pub fn money_test() {
   assert list.length(currency.listed()) == 165
   assert money.parse("BRL 214.39") |> result.map(money.to_string)
     == Ok("BRL 214.39")
+}
+
+pub fn conversion_zero_and_format_test() {
+  let assert Ok(price) = money.from_minor_units(19_990, in: currency.brl)
+  let convert = fn(target, rate) {
+    money.convert(price, to: target, at: d(rate), rounding: HalfEven)
+    |> result.map(money.to_string)
+  }
+  assert convert(currency.usd, "0.1834") == Ok("USD 36.66")
+  assert convert(currency.jpy, "27.3851") == Ok("JPY 5474")
+  assert convert(currency.bhd, "0.06903") == Ok("BHD 13.799")
+  assert money.to_string(money.zero(in: currency.brl)) == "BRL 0.00"
+  let assert Ok(amount) = money.from_minor_units(123_450, in: currency.brl)
+  assert money.format(amount, notation.brazilian) == "1.234,50"
 }
 
 pub fn display_and_forms_test() {
