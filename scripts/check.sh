@@ -13,6 +13,7 @@ for target in erlang javascript; do
 done
 python3 -I scripts/vectors.py --check
 python3 -I scripts/currencies.py --check
+python3 -I scripts/check-site.py
 scripts/check-gleam.sh
 gleam docs build >/dev/null
 echo "check: all passed"

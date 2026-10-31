@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>glecimal: exact decimals for Gleam</title>
+<meta name="description" content="glecimal is a pure-Gleam library of exact decimals for money and audit: no floats, every rounding named, the same results on Erlang and JavaScript.">
+<link rel="canonical" href="https://glecimal.com/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style.css">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://glecimal.com/">
+<meta property="og:title" content="glecimal: exact decimals for Gleam">
+<meta property="og:description" content="Exact decimals for money and audit, in pure Gleam: no floats, every rounding named, the same results on Erlang and JavaScript.">
+<meta name="color-scheme" content="light dark">
+</head>
+<body>
+<header class="masthead">
+  <a class="wordmark" href="/" aria-label="glecimal, home">glecimal<span class="point">.</span></a>
+  <nav aria-label="Package">
+    <ul class="package-links">
+      <li><a href="https://hex.pm/packages/glecimal">Hex package</a></li>
+      <li><a href="https://hexdocs.pm/glecimal/">Documentation</a></li>
+      <li><a href="https://github.com/enveriumhq/glecimal">Source</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+<section class="opening" aria-labelledby="promise">
+  <h1 id="promise">Exact decimals for Gleam, for money and audit.</h1>
+  <p class="lede">glecimal adds, multiplies, divides and rounds decimal numbers without binary floating point, and gives the same answer on Erlang and in the browser.</p>
+
+  <figure class="ledger">
+    <div class="sum" role="img" aria-label="0.1 plus 0.2: glecimal gives exactly 0.3; a float gives 0.30000000000000004.">
+      <span class="op"></span><span class="int">0</span><span class="frac">.1</span><span class="note"></span>
+      <span class="op">+</span><span class="int">0</span><span class="frac">.2</span><span class="note"></span>
+      <span class="op"></span><span class="int total">0</span><span class="frac total">.3</span><span class="note">glecimal</span>
+      <span class="op"></span><span class="int drift">0</span><span class="frac drift">.30000000000000004</span><span class="note drift">a float</span>
+    </div>
+    <figcaption>The same sum, kept as decimal digits and as a binary float.</figcaption>
+  </figure>
+
+  <pre class="install"><code>gleam add glecimal</code></pre>
+  <p class="requires">For Gleam 1.11 or later, on Erlang and JavaScript. It depends on the standard library alone.</p>
+</section>
+
+<nav class="contents" aria-labelledby="contents-title">
+  <h2 id="contents-title">The guide</h2>
+  <ol>
+    <li><a href="#scale">A decimal keeps its scale</a></li>
+    <li><a href="#rounding">Every rounding has a name</a></li>
+    <li><a href="#once">One rounding per answer</a></li>
+    <li><a href="#sharing">Sharing out money</a></li>
+    <li><a href="#money">Money and currencies</a></li>
+    <li><a href="#people">Numbers people type and read</a></li>
+    <li><a href="#edges">At the edges</a></li>
+    <li><a href="#limits">Limits, and errors that say why</a></li>
+  </ol>
+</nav>
+
+<section id="why" aria-labelledby="why-title">
+  <h2 id="why-title">Why not floats</h2>
+  <p>A float stores a binary fraction, and most decimal amounts have none: <code>0.1</code> is stored as the nearest binary value, a little off. The errors are tiny, but they add up into cents that do not reconcile and reports that disagree with the bank.</p>
+  <p>glecimal holds a number as its decimal digits and a scale, the count of digits after the point. It keeps three promises:</p>
+  <ul class="promises">
+    <li><strong>Exact, or rounded once by a rule you name.</strong> Addition, subtraction and multiplication are exact. Anything that must drop digits asks how.</li>
+    <li><strong>The same answer everywhere.</strong> Up to 128 digits on Erlang and on JavaScript, in pure Gleam, with no floats inside.</li>
+    <li><strong>Bounded.</strong> Past a stated limit you get an error to handle, never a quietly wrong number.</li>
+  </ul>
+</section>
+
+<section id="scale" class="chapter" aria-labelledby="scale-title">
+  <h2 id="scale-title"><span class="number">1</span>A decimal keeps its scale</h2>
+  <p>The scale is part of the number you wrote: <code>19.90</code> stays <code>19.90</code>, two places, and prints that way. Adding keeps the larger scale; multiplying adds the scales.</p>
+  <pre><code>glecimal.parse("19.90")           // -&gt; Ok(19.90)
+glecimal.parse("19,90")
+// -&gt; Error(UnexpectedCharacter(position: 2, character: ","))
+glecimal.add(price, tip)          // 19.90 + 0.1 -&gt; Ok(20.00)
+glecimal.multiply(price, three)   // 19.90 × 3 -&gt; Ok(59.70)</code></pre>
+  <p>Because the scale is part of the value, <code>==</code> treats <code>19.9</code> and <code>19.90</code> as different. Compare amounts with <code>compare</code>, which looks only at the number and sorts lists with <code>list.sort(amounts, glecimal.compare)</code>.</p>
+</section>
+
+<section id="rounding" class="chapter" aria-labelledby="rounding-title">
+  <h2 id="rounding-title"><span class="number">2</span>Every rounding has a name</h2>
+  <p>Nothing rounds by default. Each operation that drops digits takes the scale to keep and one of seven roundings, named so that nobody has to remember what “up” meant.</p>
+  <table class="figures">
+    <caption>Rounding to a whole number</caption>
+    <thead>
+      <tr><th scope="col">Rounding</th><th scope="col">2.5</th><th scope="col">−2.5</th><th scope="col">2.4</th><th scope="col">Also called</th></tr>
+    </thead>
+    <tbody>
+      <tr><th scope="row"><code>HalfEven</code></th><td>2</td><td>−2</td><td>2</td><td>banker’s rounding; ABNT NBR 5891</td></tr>
+      <tr><th scope="row"><code>HalfAwayFromZero</code></th><td>3</td><td>−3</td><td>2</td><td>half up, commercial rounding</td></tr>
+      <tr><th scope="row"><code>HalfTowardZero</code></th><td>2</td><td>−2</td><td>2</td><td>half down</td></tr>
+      <tr><th scope="row"><code>TowardZero</code></th><td>2</td><td>−2</td><td>2</td><td>truncation</td></tr>
+      <tr><th scope="row"><code>AwayFromZero</code></th><td>3</td><td>−3</td><td>3</td><td>up</td></tr>
+      <tr><th scope="row"><code>Floor</code></th><td>2</td><td>−3</td><td>2</td><td>toward negative infinity</td></tr>
+      <tr><th scope="row"><code>Ceiling</code></th><td>3</td><td>−2</td><td>3</td><td>toward positive infinity</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="once" class="chapter" aria-labelledby="once-title">
+  <h2 id="once-title"><span class="number">3</span>One rounding per answer</h2>
+  <p>When an answer cannot be exact, glecimal computes it exactly first and rounds it once, at the end. A tax on a price, a quotient, a compound interest factor: each carries a single rounding that an auditor can name.</p>
+  <pre><code>glecimal.divide(ten, by: three, scale: 2, rounding: HalfEven)
+// -&gt; Ok(3.33)
+
+glecimal.multiply_rounded(price, by: tax_rate, scale: 2, rounding: HalfEven)
+// 19.99 × 0.0725 -&gt; Ok(1.45)
+
+glecimal.power(monthly, exponent: 12, scale: 10, rounding: HalfEven)
+// 1.0075 to the 12th -&gt; Ok(1.0938068977); a negative exponent discounts</code></pre>
+</section>
+
+<section id="sharing" class="chapter" aria-labelledby="sharing-title">
+  <h2 id="sharing-title"><span class="number">4</span>Sharing out money</h2>
+  <p>Splitting a bill is where cents go missing. <code>split</code> and <code>allocate</code> give each part its exact share rounded down, then hand the leftover cents to the parts that lost the most, so the parts always add back to the whole.</p>
+  <pre><code>glecimal.split(hundred, into: 3)
+// -&gt; Ok([33.34, 33.33, 33.33])
+
+glecimal.allocate(thousand, weights: [fifty, thirty, twenty])
+// -&gt; Ok([500.00, 300.00, 200.00])</code></pre>
+  <p>To know how many units an amount buys and what is left, <code>divide_with_remainder</code> returns both, and the two always rebuild the amount exactly.</p>
+  <pre><code>glecimal.divide_with_remainder(cash, by: share_price, scale: 0)
+// 1000.00 ÷ 33.33 -&gt; Ok(#(30, 0.10)): thirty shares, ten cents left</code></pre>
+</section>
+
+<section id="money" class="chapter" aria-labelledby="money-title">
+  <h2 id="money-title"><span class="number">5</span>Money and currencies</h2>
+  <p>A <code>Money</code> is an amount in one of the 165 ISO 4217 currencies with minor units, always at that currency’s number of decimals: <code>BRL 10.50</code>, <code>JPY 1050</code>, <code>BHD 1.050</code>. Adding reais to dollars is an error, not a number.</p>
+  <pre><code>money.add(reais, dollars)
+// -&gt; Error(CurrencyMismatch(expected: BRL, found: USD))
+
+money.convert(price, to: currency.usd, at: rate, rounding: HalfEven)
+// BRL 199.90 at 0.1834 -&gt; Ok(USD 36.66)
+
+money.zero(in: currency.jpy)   // JPY 0</code></pre>
+  <p>When ISO withdraws a currency, its code keeps reading back, so records written years ago still open.</p>
+</section>
+
+<section id="people" class="chapter" aria-labelledby="people-title">
+  <h2 id="people-title"><span class="number">6</span>Numbers people type and read</h2>
+  <p>People write <code>1.234,56</code> in Brazil and <code>1,234.56</code> in English. <code>glecimal/notation</code> formats amounts for display and reads form fields strictly: digit groups of three or none, and never a leading zero group, so <code>0.500</code> typed into a Brazilian field is refused instead of read as five hundred.</p>
+  <pre><code>notation.format(amount, notation.brazilian)      // "1.234.567,89"
+notation.parse("1.234,56", notation.brazilian)   // -&gt; Ok(1234.56)
+notation.parse("0.500", notation.brazilian)      // -&gt; Error(InvalidGrouping(position: 1))</code></pre>
+</section>
+
+<section id="edges" class="chapter" aria-labelledby="edges-title">
+  <h2 id="edges-title"><span class="number">7</span>At the edges</h2>
+  <p>Decimals travel as text, so no value passes through a float on its way in or out.</p>
+  <dl class="edges">
+    <dt>JSON</dt>
+    <dd><code>glecimal.decoder()</code> reads strings and refuses numbers, which have already been through a float. Write values with <code>json.string(glecimal.to_string(total))</code>.</dd>
+    <dt>PostgreSQL</dt>
+    <dd>Read <code>numeric</code> columns as <code>total::text</code> and write through <code>$1::text::numeric</code>. Round to the column’s scale before writing, or PostgreSQL rounds for you, silently.</dd>
+    <dt>The browser</dt>
+    <dd>The same functions run in Lustre, so a total computed in a form matches the server’s to the last digit.</dd>
+  </dl>
+</section>
+
+<section id="limits" class="chapter" aria-labelledby="limits-title">
+  <h2 id="limits-title"><span class="number">8</span>Limits, and errors that say why</h2>
+  <p>Every limit is stated, and passing one is an error you can match on. There is no panic, no not-a-number and no infinity.</p>
+  <table class="figures limits">
+    <caption>The bounds</caption>
+    <tbody>
+      <tr><th scope="row">Significant digits in a value</th><td>128</td></tr>
+      <tr><th scope="row">Digits after the point</th><td>64</td></tr>
+      <tr><th scope="row">Parts in one split</th><td>100,000</td></tr>
+      <tr><th scope="row">Digits in an exact power</th><td>10,000</td></tr>
+      <tr><th scope="row">Integers taken from <code>Int</code></th><td>±9,007,199,254,740,991</td></tr>
+    </tbody>
+  </table>
+  <p>Errors carry their reason and, for text, the position: <code>UnexpectedCharacter(position: 1, character: "e")</code> for <code>1e3</code>, <code>WouldRound</code> for a conversion that would drop a digit, <code>Overflow</code> for a result past 128 digits.</p>
+</section>
+
+<section id="checked" aria-labelledby="checked-title">
+  <h2 id="checked-title">How it is checked</h2>
+  <p>Every operation is compared with Python’s <code>decimal</code> module, an implementation written by other people for other reasons: more than eleven thousand cases, run on Erlang and on JavaScript. Property tests check the laws that matter for money, such as parts adding up to the whole and text reading back unchanged. The source holds no panics, no floats and no foreign code, and a check in the build keeps it that way.</p>
+</section>
+</main>
+
+<footer class="colophon">
+  <ul class="package-links">
+    <li><a href="https://hex.pm/packages/glecimal">Hex package</a></li>
+    <li><a href="https://hexdocs.pm/glecimal/">Documentation</a></li>
+    <li><a href="https://github.com/enveriumhq/glecimal">Source</a></li>
+  </ul>
+  <p>glecimal is free software under the Apache 2.0 licence. It is built and maintained by <a href="https://enverium.com">Enverium</a>, a sustainability reporting platform, for its audit-grade applications.</p>
+</footer>
+</body>
+</html>
