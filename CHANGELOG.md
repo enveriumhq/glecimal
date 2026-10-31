@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.0
+
+Money in motion. Additions only: every 1.0 result and error is unchanged.
+
+- `money.convert` changes currency at a rate, rounding the exact product once
+  to the target currency's minor units.
+- `money.zero` is zero in a currency, at its scale, and never fails.
+- `money.format` writes an amount for display in a notation.
+- `glecimal.divide_with_remainder` truncates the quotient at a scale and
+  returns the exact remainder, for instalments and for how many units an
+  amount buys.
+
 ## 1.0.0
 
 The first release.

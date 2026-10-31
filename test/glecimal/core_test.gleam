@@ -211,3 +211,24 @@ pub fn messages_test() {
   assert glecimal.describe_arithmetic_error(NegativeWeight(2))
     == "the weight at index 2 is negative"
 }
+
+pub fn divide_with_remainder_test() {
+  let pair = fn(outcome: Result(#(Decimal, Decimal), glecimal.ArithmeticError)) {
+    result.map(outcome, fn(pair) {
+      #(glecimal.to_string(pair.0), glecimal.to_string(pair.1))
+    })
+  }
+  assert glecimal.divide_with_remainder(d("1000.00"), by: d("33.33"), scale: 0)
+    |> pair
+    == Ok(#("30", "0.10"))
+  assert glecimal.divide_with_remainder(d("-100.00"), by: d("3"), scale: 2)
+    |> pair
+    == Ok(#("-33.33", "-0.01"))
+  assert glecimal.divide_with_remainder(d("1"), by: d("0.00"), scale: 0)
+    == Error(DivisionByZero)
+  assert glecimal.divide_with_remainder(d("1"), by: d("3"), scale: 65)
+    == Error(ScaleOutOfRange(65))
+  // The exact remainder 10^-65 cannot be held at scale 64.
+  assert glecimal.divide_with_remainder(d("1"), by: d("0.3"), scale: 64)
+    == Error(Overflow)
+}

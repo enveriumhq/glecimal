@@ -470,6 +470,51 @@ pub fn divide(
   build(sign, rounded_quotient(numerator, denominator, sign, rounding), scale)
 }
 
+/// `dividend ÷ divisor` truncated toward zero at `scale`, with the exact
+/// remainder, so `dividend` is exactly `quotient × divisor + remainder`. The
+/// remainder has the dividend's sign and is smaller than one `10^-scale` unit
+/// of the divisor; its scale is the larger of the dividend's scale and
+/// `scale` plus the divisor's scale, down to `max_scale` when its trailing
+/// digits are zeros. A remainder that needs more is `Overflow`.
+///
+/// ```gleam
+/// // How many shares at 33.33 does 1000.00 buy, and what is left?
+/// glecimal.divide_with_remainder(cash, by: price, scale: 0)
+/// // -> Ok(#(30, 0.10))
+/// ```
+pub fn divide_with_remainder(
+  dividend: Decimal,
+  by divisor: Decimal,
+  scale scale: Int,
+) -> Result(#(Decimal, Decimal), ArithmeticError) {
+  use quotient <- result.try(divide(
+    dividend,
+    by: divisor,
+    scale:,
+    rounding: TowardZero,
+  ))
+  // At a common scale, |quotient × divisor| ≤ |dividend| because the
+  // quotient was truncated, so the difference is a natural.
+  let exact_scale = int.max(dividend.scale, scale + divisor.scale)
+  let taken =
+    natural.multiply(quotient.magnitude, divisor.magnitude)
+    |> natural.multiply_power_of_ten(exact_scale - scale - divisor.scale)
+  let remainder =
+    natural.multiply_power_of_ten(
+      dividend.magnitude,
+      exact_scale - dividend.scale,
+    )
+    |> natural.subtract(taken)
+  use remainder <- result.try(case exact_scale > max_scale {
+    True ->
+      canonical(dividend.sign, remainder, exact_scale)
+      |> rescale(max_scale)
+      |> result.replace_error(Overflow)
+    False -> build(dividend.sign, remainder, exact_scale)
+  })
+  Ok(#(quotient, remainder))
+}
+
 /// The value at `scale`. Dropping digits applies `rounding`; adding digits
 /// appends zeros.
 pub fn round(

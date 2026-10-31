@@ -117,6 +117,29 @@ def divide(a: Decimal, b: Decimal, scale: int, rounding: str) -> dict:
     return quantized(Fraction(a) / Fraction(b), scale, rounding)
 
 
+def divide_with_remainder(a: Decimal, b: Decimal, scale: int) -> dict:
+    """The quotient truncated toward zero at `scale`, and a − quotient × b
+    exactly, at the larger of a's scale and scale + b's scale, or at most 64
+    when its trailing digits are zeros."""
+    if not 0 <= scale <= MAX_SCALE:
+        return {"error": "scale"}
+    if b.is_zero():
+        return {"error": "division_by_zero"}
+    units = int(Fraction(a) / Fraction(b) * 10**scale)  # int() truncates toward zero
+    quotient = EXACT.scaleb(Decimal(units), -scale)
+    if digit_count(quotient) > MAX_DIGITS:
+        return {"error": "overflow"}
+    remainder = Fraction(a) - Fraction(units, 10**scale) * Fraction(b)
+    target = min(max(scale_of(a), scale + scale_of(b)), MAX_SCALE)
+    remainder_units = remainder * 10**target
+    if remainder_units.denominator != 1:
+        return {"error": "overflow"}
+    remainder = EXACT.scaleb(Decimal(int(remainder_units)), -target)
+    if digit_count(remainder) > MAX_DIGITS:
+        return {"error": "overflow"}
+    return {"ok": [text(quotient), text(remainder)]}
+
+
 def round_to(a: Decimal, scale: int, rounding: str) -> dict:
     if not 0 <= scale <= MAX_SCALE:
         return {"error": "scale"}
@@ -160,7 +183,7 @@ def allocate(amount: Decimal, weights: list) -> dict:
     for index in ranked[:leftover]:
         floors[index] += 1
     sign = -1 if amount < 0 else 1
-    return {"ok": [text(Decimal(sign * f).scaleb(-scale)) for f in floors]}
+    return {"ok": [text(EXACT.scaleb(Decimal(sign * f), -scale)) for f in floors]}
 
 
 def compare(a: Decimal, b: Decimal) -> dict:
@@ -270,6 +293,19 @@ def cases() -> list:
             out.append({"op": "multiply_rounded", "a": a, "b": b, "scale": scale,
                         "rounding": rounding,
                         **multiply_rounded(Decimal(a), Decimal(b), scale, rounding)})
+
+    remainders = [
+        ("1000.00", "33.33", 0), ("-1000.00", "33.33", 0), ("1000.00", "-33.33", 0),
+        ("-1000.00", "-33.33", 0), ("100.00", "3", 2), ("10", "4", 0), ("10", "5", 0),
+        ("1", "0", 0), ("1", "3", -1), ("1", "3", 65), ("1", "0.5", 64), ("1", "0.3", 64),
+        ("0.001", "7", 2), ("-0.001", "7", 2), ("0", "7", 3),
+        ("9" * 64, "0." + "0" * 31 + "1", 0), ("1", "9" * 64, 64),
+    ]
+    for _ in range(400):
+        remainders.append((random_decimal(rng, 30, 20), random_decimal(rng, 20, 20), rng.randint(0, 30)))
+    for a, b, scale in remainders:
+        out.append({"op": "divide_with_remainder", "a": a, "b": b, "scale": scale,
+                    **divide_with_remainder(Decimal(a), Decimal(b), scale)})
 
     divisions = list(DIVIDE_EDGES)
     for _ in range(400):

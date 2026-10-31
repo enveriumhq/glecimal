@@ -27,16 +27,22 @@ Decimals with seven named roundings, division and powers rounded once,
 allocation that adds up, `Money` over the ISO 4217 currencies, localized
 display and input, JSON decoders, and PostgreSQL through text.
 
+## 1.1: shipped
+
+Currency conversion rounded once, `money.zero`, `money.format`, and division
+with an exact remainder.
+
 ## Next
+
+- **Exact YAML numbers with yamleam.** A yamleam decoder that hands over a
+  number as written, so `rate: 0.0725` in a configuration file decodes
+  exactly; this needs a yamleam release first.
 
 - **The ISO 4217 list.** Each amendment ships as a minor release
   (`scripts/currencies.py --refresh`). New codes are added; a withdrawn code
   keeps a deprecated constant, and `from_code` still reads it, so no release
   breaks a build or an old record. A change in a code's minor units changes
   amounts, so it ships as a major release.
-- **yamleam.** YAML reads `19.90` written without quotes as a float. Reading it
-  exactly needs yamleam to hand a decoder the number as written; until then,
-  quote decimals in YAML.
 - **More notations** as real users need them, such as Indian digit grouping
   (`12,34,567.89`), which groups by two after the first three.
 

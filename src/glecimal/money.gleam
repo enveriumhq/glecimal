@@ -4,8 +4,8 @@
 //// Money never mixes currencies (adding `BRL` to `USD` is
 //// `CurrencyMismatch`), its own arithmetic is exact, and a value with
 //// nonzero digits beyond the currency's minor units comes in only through
-//// `new_rounded` or `multiply`, each with a named rounding. Allocation works in minor
-//// units, so the parts always add up to the whole.
+//// `new_rounded`, `multiply` or `convert`, each with a named rounding.
+//// Allocation works in minor units, so the parts always add up to the whole.
 ////
 //// ```gleam
 //// import glecimal.{HalfEven}
@@ -34,6 +34,7 @@ import glecimal.{
   TooManyFractionDigits, UnexpectedCharacter,
 }
 import glecimal/currency.{type Currency}
+import glecimal/notation.{type Notation}
 
 /// An amount at its currency's scale.
 pub opaque type Money {
@@ -78,6 +79,15 @@ pub fn new_rounded(
   glecimal.round(amount, scale: currency.minor_units(currency), rounding:)
   |> result.map(Money(_, currency))
   |> result.map_error(Arithmetic)
+}
+
+/// Zero in `currency`, at its scale: `zero(in: currency.brl)` is `BRL 0.00`.
+pub fn zero(in currency: Currency) -> Money {
+  case glecimal.from_minor_units(0, scale: currency.minor_units(currency)) {
+    Ok(amount) -> Money(amount, currency)
+    // Unreachable: ISO 4217 minor units are 0 to 4, inside every bound.
+    Error(_) -> Money(glecimal.zero(), currency)
+  }
 }
 
 /// An amount counted in minor units: `from_minor_units(1050, in:
@@ -157,6 +167,25 @@ pub fn multiply(
   |> result.map_error(Arithmetic)
 }
 
+/// `money` in another currency at `rate`, the units of the target currency
+/// per unit of `money`'s, rounded once to the target's minor units:
+/// `BRL 199.90` converted to `currency.usd` at `0.1834` is `USD 36.66`.
+pub fn convert(
+  money: Money,
+  to target: Currency,
+  at rate: Decimal,
+  rounding rounding: Rounding,
+) -> Result(Money, MoneyError) {
+  glecimal.multiply_rounded(
+    money.amount,
+    by: rate,
+    scale: currency.minor_units(target),
+    rounding:,
+  )
+  |> result.map(Money(_, target))
+  |> result.map_error(Arithmetic)
+}
+
 /// Splits the amount in proportion to `weights`, in minor units, so the
 /// parts add up to it exactly; see `glecimal.allocate`.
 pub fn allocate(
@@ -210,6 +239,12 @@ pub fn is_positive(money: Money) -> Bool {
 /// `glecimal/notation`.
 pub fn to_string(money: Money) -> String {
   currency.code(money.currency) <> " " <> glecimal.to_string(money.amount)
+}
+
+/// The amount for display, in `notation` and without a currency symbol:
+/// `format(price, notation.brazilian)` is `"1.234,50"` for `BRL 1234.50`.
+pub fn format(money: Money, notation: Notation) -> String {
+  notation.format(money.amount, notation)
 }
 
 /// Reads the form `to_string` writes. Zeros are added up to the currency's
