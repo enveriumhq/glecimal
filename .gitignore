@@ -9,3 +9,6 @@ __pycache__/
 .vscode
 .claude
 .codex
+
+# wrangler writes its account cache here when deploying the site
+.wrangler/

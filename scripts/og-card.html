@@ -1,0 +1,41 @@
+<!doctype html>
+<!-- The social preview card, site/og.png (1200×630). Not served: render it
+     with scripts/render-site-images.sh after changing it. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    background: #f2f6f1; color: #1c2433;
+    font-family: Charter, "Bitstream Charter", "IBM Plex Serif", Georgia, serif;
+    font-variant-numeric: tabular-nums lining-nums;
+    display: grid; grid-template-columns: 1fr 1fr; align-items: center;
+    padding: 0 80px; box-sizing: border-box;
+  }
+  .words { align-self: stretch; display: flex; flex-direction: column; justify-content: space-between; padding: 76px 0 70px; }
+  .mark { font-size: 54px; font-weight: 600; }
+  .mark span { color: #2c6a4e; }
+  h1 { font-size: 50px; line-height: 1.18; font-weight: 600; margin: 0; }
+  .site { font-size: 26px; color: #4f5b6b; }
+  .sum { display: grid; grid-template-columns: 0.9em auto auto; font-size: 64px; line-height: 1.4; justify-content: end; }
+  .op { color: #4f5b6b; }
+  .int { text-align: right; }
+  .total { border-top: 2px solid #1c2433; border-bottom: 7px double #1c2433; }
+  .drift { color: #b3261e; font-size: 40px; padding-top: 14px; }
+</style>
+</head>
+<body>
+  <div class="words">
+    <div class="mark">glecimal<span>.</span></div>
+    <h1>Exact decimals for Gleam, for money and audit.</h1>
+    <div class="site">glecimal.com</div>
+  </div>
+  <div class="sum">
+    <span class="op"></span><span class="int">0</span><span>.1</span>
+    <span class="op">+</span><span class="int">0</span><span>.2</span>
+    <span class="op"></span><span class="int total">0</span><span class="total">.3</span>
+    <span class="op"></span><span class="int drift">0</span><span class="drift">.30000000000000004</span>
+  </div>
+</body>
+</html>
