@@ -1,0 +1,312 @@
+/* glecimal.com: a ledger page. Green ledger paper, blue-black ink, one green
+   accent for links and the wordmark's point, and accountant's red used once,
+   for the float that drifts. System fonts only. */
+
+:root {
+  --paper: #f2f6f1;
+  --paper-deep: #e6eee6;
+  --rule: #b9cdbf;
+  --ink: #1c2433;
+  --ink-soft: #4f5b6b;
+  --accent: #2c6a4e;
+  --red: #b3261e;
+  --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, "Iowan Old Style", "IBM Plex Serif", "Source Serif 4", "Noto Serif", Georgia, serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --measure: 40rem;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #142019;
+    --paper-deep: #1b2a22;
+    --rule: #34493d;
+    --ink: #e3ebe5;
+    --ink-soft: #a7b6ad;
+    --accent: #8cc7a6;
+    --red: #f08b7f;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 112.5%;
+  line-height: 1.6;
+  font-variant-numeric: lining-nums;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0 auto;
+  max-width: var(--measure);
+  padding: 0 1.25rem 4rem;
+}
+
+a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+a:hover { text-decoration-thickness: 2px; }
+
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 1px;
+}
+
+/* ── Masthead ──────────────────────────────────────────────────────────── */
+
+.masthead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  padding: 1.75rem 0 1rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.wordmark {
+  color: var(--ink);
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+.wordmark .point { color: var(--accent); }
+
+.package-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ── Opening ───────────────────────────────────────────────────────────── */
+
+.opening { padding-top: 2.5rem; }
+
+h1 {
+  margin: 0;
+  font-size: 2.25rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  max-width: 18em;
+}
+
+.lede {
+  margin: 1rem 0 0;
+  color: var(--ink-soft);
+  font-size: 1.15rem;
+}
+
+/* The ledger sum: figures aligned on the decimal point, a single rule above
+   the total and a double rule below it, as an accountant closes a column. */
+.ledger { margin: 2.75rem 0 2.25rem; }
+
+.sum {
+  display: grid;
+  grid-template-columns: 1.6ch auto auto 1fr;
+  font-size: clamp(1.5rem, 6.4vw, 2.5rem);
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.sum .op { color: var(--ink-soft); text-align: right; padding-right: 0.4ch; }
+.sum .int { text-align: right; }
+.sum .frac { text-align: left; }
+
+.sum .note {
+  align-self: center;
+  padding-left: 1ch;
+  color: var(--ink-soft);
+  font-size: 0.45em;
+}
+
+/* The rules run under the figures only, not under the operator. */
+.sum .total {
+  border-top: 1px solid var(--ink);
+  border-bottom: 4px double var(--ink);
+}
+
+.sum .drift { color: var(--red); margin-top: 0.35rem; }
+
+/* On narrow screens each label moves under its figure. */
+@media (max-width: 40rem) {
+  .sum { grid-template-columns: 1.6ch auto 1fr; }
+  .sum .note {
+    grid-column: 2 / -1;
+    padding: 0 0 0.3rem;
+    font-size: 0.5em;
+    line-height: 1.2;
+  }
+  .sum .note:empty { display: none; }
+}
+
+.ledger figcaption {
+  margin-top: 0.75rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+pre.install { margin-bottom: 0.5rem; }
+
+.requires {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+/* ── Contents ──────────────────────────────────────────────────────────── */
+
+.contents {
+  margin-top: 3.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+}
+
+.contents h2 { margin-top: 0; }
+
+.contents ol {
+  margin: 0;
+  padding-left: 1.6rem;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.contents li { padding-left: 0.25rem; }
+.contents li::marker { color: var(--ink-soft); }
+
+/* ── Text ──────────────────────────────────────────────────────────────── */
+
+main > section { margin-top: 3.5rem; }
+
+h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* Chapter numbers hang in the margin on wide screens, like ledger lines. */
+.chapter h2 .number {
+  display: inline-block;
+  min-width: 1.6rem;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+@media (min-width: 52rem) {
+  .chapter h2 .number {
+    margin-left: -2.4rem;
+    min-width: 2.4rem;
+  }
+}
+
+p { margin: 0 0 1rem; }
+
+strong { font-weight: 600; }
+
+.promises { padding-left: 1.2rem; }
+.promises li { margin-bottom: 0.6rem; }
+
+code {
+  font-family: var(--mono);
+  font-size: 0.82em;
+}
+
+p code, li code, dd code, th code, td code {
+  padding: 0.05em 0.25em;
+  background: var(--paper-deep);
+}
+
+pre {
+  margin: 0 0 1.25rem;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  background: var(--paper-deep);
+  border-left: 2px solid var(--rule);
+  line-height: 1.55;
+}
+
+pre code { font-size: 0.8rem; }
+
+/* ── Tables of figures ─────────────────────────────────────────────────── */
+
+table.figures {
+  width: 100%;
+  margin: 1.25rem 0 1.5rem;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.figures caption {
+  caption-side: bottom;
+  padding-top: 0.6rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.figures th, .figures td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: baseline;
+}
+
+.figures thead th {
+  border-bottom: 1px solid var(--ink);
+  font-weight: 600;
+  text-align: right;
+}
+
+.figures thead th:first-child, .figures thead th:last-child,
+.figures tbody th { text-align: left; font-weight: normal; }
+
+.figures td { text-align: right; }
+
+.figures td:last-child:not(:nth-child(2)) {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.figures th code, .figures td code { background: none; padding: 0; }
+
+.limits td { white-space: nowrap; }
+
+/* ── Edges ─────────────────────────────────────────────────────────────── */
+
+.edges { margin: 0; }
+.edges dt { font-weight: 600; }
+.edges dd { margin: 0.15rem 0 1rem; }
+
+/* ── Colophon ──────────────────────────────────────────────────────────── */
+
+.colophon {
+  margin-top: 4rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.colophon .package-links { margin-bottom: 0.75rem; }
+.colophon p { margin: 0; }
+
+@media (max-width: 30rem) {
+  h1 { font-size: 1.85rem; }
+  .figures th, .figures td { padding: 0.35rem 0.35rem; }
+  .figures td:last-child:not(:nth-child(2)) { display: none; }
+  .figures thead th:last-child { display: none; }
+}

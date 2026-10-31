@@ -1,0 +1,18 @@
+# Security headers, as on enverium.com, plus a content security policy that
+# allows this site's own stylesheet and images and nothing else: the page has
+# no scripts, fonts, frames or forms.
+/*
+  Content-Security-Policy: default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Cross-Origin-Opener-Policy: same-origin
+  Permissions-Policy: camera=(), geolocation=(), microphone=()
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+
+# Not content-hashed, so kept fresh for an hour at most.
+/style.css
+  Cache-Control: public, max-age=3600
+
+/favicon.svg
+  Cache-Control: public, max-age=604800
