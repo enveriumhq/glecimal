@@ -32,7 +32,15 @@ display and input, JSON decoders, and PostgreSQL through text.
 Currency conversion rounded once, `money.zero`, `money.format`, and division
 with an exact remainder.
 
+## 1.2: shipped
+
+Notations named by locale, with CLDR's separators and `for_locale`.
+
 ## Next
+
+- **More of CLDR's number formats**, so that more locales fit: a minimum
+  of two grouping digits (`es-ES`, `it-IT`, `pt-PT`), Indian grouping
+  (`en-IN`) and the Unicode minus (`sv-SE`, `fi-FI`).
 
 - **Exact YAML numbers with yamleam.** A yamleam decoder that hands over a
   number as written, so `rate: 0.0725` in a configuration file decodes

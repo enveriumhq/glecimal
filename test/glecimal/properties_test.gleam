@@ -268,9 +268,18 @@ pub fn power_matches_repeated_multiplication_test() {
   assert power == product
 }
 
+pub fn every_locale_round_trips_test() {
+  use value <- qcheck.given(decimal(40, 20))
+  notation.locales()
+  |> list.each(fn(tag) {
+    let assert Ok(style) = notation.for_locale(tag)
+    assert notation.parse(notation.format(value, style), style) == Ok(value)
+  })
+}
+
 pub fn notation_round_trips_test() {
   use value <- qcheck.given(decimal(40, 20))
-  [notation.brazilian, notation.english, notation.plain]
+  [notation.pt_br, notation.en_us, notation.plain]
   |> list.each(fn(style) {
     assert notation.parse(notation.format(value, style), style) == Ok(value)
   })

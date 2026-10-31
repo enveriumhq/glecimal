@@ -187,10 +187,14 @@ money.zero(in: currency.jpy)   // JPY 0</code></pre>
 
 <section id="people" class="chapter" aria-labelledby="people-title">
   <h2 id="people-title"><span class="number">6</span>Numbers people type and read</h2>
-  <p>People write <code>1.234,56</code> in Brazil and <code>1,234.56</code> in English. <code>glecimal/notation</code> formats amounts for display and reads form fields strictly: digit groups of three or none, and never a leading zero group, so <code>0.500</code> typed into a Brazilian field is refused instead of read as five hundred.</p>
-  <pre><code>notation.format(amount, notation.brazilian)      // "1.234.567,89"
-notation.parse("1.234,56", notation.brazilian)   // -&gt; Ok(1234.56)
-notation.parse("0.500", notation.brazilian)      // -&gt; Error(InvalidGrouping(position: 1))</code></pre>
+  <p>People write <code>1.234,56</code> in Brazil, <code>1,234.56</code> in the United States and <code>1 234,56</code> in France. <code>glecimal/notation</code> names each notation by its locale, with the separators that CLDR, the Unicode locale data browsers use, gives it.</p>
+  <pre><code>notation.format(amount, notation.pt_br)      // "1.234.567,89"
+notation.format(amount, notation.de_ch)      // "1'234'567.89"
+notation.for_locale("fr-FR")                 // -&gt; Ok(notation.fr_fr), from a browser's locale</code></pre>
+  <p>Reading a form field is strict: digit groups of three or none, and never a leading zero group, so <code>0.500</code> typed into a Brazilian field is refused instead of read as five hundred. Where a locale groups with spaces, any space people type counts.</p>
+  <pre><code>notation.parse("1.234,56", notation.pt_br)   // -&gt; Ok(1234.56)
+notation.parse("0.500", notation.pt_br)      // -&gt; Error(InvalidGrouping(position: 1))
+notation.parse("1 234,5", notation.fr_fr)    // -&gt; Ok(1234.5)</code></pre>
 </section>
 
 <section id="edges" class="chapter" aria-labelledby="edges-title">

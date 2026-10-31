@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.0
+
+Notations named by locale. Additions and deprecations only: code written for
+1.1 still compiles, with a deprecation warning where it uses an old name.
+
+- `glecimal/notation` names notations by BCP 47 tag, with CLDR's separators:
+  `pt_br`, `en_us`, `en_gb`, `de_de`, `fr_fr` and `de_ch`.
+- `notation.for_locale` reads a tag, such as `"pt-BR"` or `pt_BR`, from a
+  browser or an `Accept-Language` header, for the 81 locales that a notation
+  reproduces exactly (CLDR 48); `notation.locales` lists them, and
+  `notation.cldr_version` names the release.
+- Where a notation groups with a space or an apostrophe, `notation.parse`
+  accepts any space or either apostrophe, as people type them.
+- `notation.brazilian` and `notation.english` are deprecated in favour of
+  `pt_br` and `en_us`.
+
 ## 1.1.0
 
 Money in motion. Additions only: every 1.0 result and error is unchanged.

@@ -156,6 +156,6 @@ pub fn zero_and_format_test() {
   assert money.from_minor_units(0, in: currency.brl)
     == Ok(money.zero(in: currency.brl))
   let assert Ok(amount) = money.from_minor_units(123_450, in: currency.brl)
-  assert money.format(amount, notation.brazilian) == "1.234,50"
-  assert money.format(amount, notation.english) == "1,234.50"
+  assert money.format(amount, notation.pt_br) == "1.234,50"
+  assert money.format(amount, notation.en_us) == "1,234.50"
 }

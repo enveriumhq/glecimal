@@ -242,7 +242,7 @@ pub fn to_string(money: Money) -> String {
 }
 
 /// The amount for display, in `notation` and without a currency symbol:
-/// `format(price, notation.brazilian)` is `"1.234,50"` for `BRL 1234.50`.
+/// `format(price, notation.pt_br)` is `"1.234,50"` for `BRL 1234.50`.
 pub fn format(money: Money, notation: Notation) -> String {
   notation.format(money.amount, notation)
 }

@@ -113,10 +113,12 @@ pub fn money_and_currencies_test() {
 }
 
 pub fn numbers_people_type_and_read_test() {
-  assert notation.format(d("1234567.89"), notation.brazilian) == "1.234.567,89"
-  assert notation.parse("1.234,56", notation.brazilian) |> text == Ok("1234.56")
-  assert notation.parse("0.500", notation.brazilian)
-    == Error(InvalidGrouping(1))
+  assert notation.format(d("1234567.89"), notation.pt_br) == "1.234.567,89"
+  assert notation.parse("1.234,56", notation.pt_br) |> text == Ok("1234.56")
+  assert notation.parse("0.500", notation.pt_br) == Error(InvalidGrouping(1))
+  assert notation.format(d("1234567.89"), notation.de_ch) == "1'234'567.89"
+  assert notation.for_locale("fr-FR") == Ok(notation.fr_fr)
+  assert notation.parse("1 234,5", notation.fr_fr) |> text == Ok("1234.5")
 }
 
 pub fn at_the_edges_test() {
