@@ -166,23 +166,27 @@ pub fn conversion_zero_and_format_test() {
   assert convert(currency.bhd, "0.06903") == Ok("BHD 13.799")
   assert money.to_string(money.zero(in: currency.brl)) == "BRL 0.00"
   let assert Ok(amount) = money.from_minor_units(123_450, in: currency.brl)
-  assert money.format(amount, notation.brazilian) == "1.234,50"
+  assert money.format(amount, notation.pt_br) == "1.234,50"
 }
 
 pub fn display_and_forms_test() {
   let amount = d("1234567.89")
-  assert notation.format(amount, notation.brazilian) == "1.234.567,89"
-  assert notation.format(amount, notation.english) == "1,234,567.89"
+  assert notation.format(amount, notation.pt_br) == "1.234.567,89"
+  assert notation.format(amount, notation.en_us) == "1,234,567.89"
   let read = fn(text) {
-    notation.parse(text, notation.brazilian) |> result.map(glecimal.to_string)
+    notation.parse(text, notation.pt_br) |> result.map(glecimal.to_string)
   }
   assert read("1.234,56") == Ok("1234.56")
   assert read("1234,56") == Ok("1234.56")
   assert read("12.34,5") == Error(InvalidGrouping(2))
   assert read("0.500") == Error(InvalidGrouping(1))
-  let assert Ok(swiss) =
-    notation.new(decimal_separator: ".", group_separator: "'")
-  assert notation.format(amount, swiss) == "1'234'567.89"
+  assert notation.format(amount, notation.de_ch) == "1'234'567.89"
+  assert notation.for_locale("fr-FR") == Ok(notation.fr_fr)
+  assert notation.for_locale("es-ES") == Error(Nil)
+  assert notation.parse("1 234,5", notation.fr_fr)
+    |> result.map(glecimal.to_string)
+    == Ok("1234.5")
+  assert list.length(notation.locales()) == 81
 }
 
 pub fn json_test() {

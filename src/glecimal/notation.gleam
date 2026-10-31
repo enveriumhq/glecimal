@@ -1,5 +1,7 @@
-//// Decimals as people write them: `1.234,56` in Brazil, `1,234.56` in
-//// English. `format` writes a value for display and `parse` reads a form
+//// Decimals as people write them: `1.234,56` in Brazil, `1,234.56` in the
+//// United States. A notation is named by its locale's BCP 47 tag
+//// (`notation.pt_br`, or `for_locale("pt-BR")` for a tag from a browser),
+//// with the separators CLDR gives that locale. `format` writes a value for display and `parse` reads a form
 //// field back, strictly: digit groups have exactly three digits or are not
 //// used at all, a grouped number never starts with a zero group, and the
 //// bounds of `glecimal.parse` apply. So `0.500` typed into a Brazilian field
@@ -8,9 +10,9 @@
 //// ```gleam
 //// import glecimal/notation
 ////
-//// notation.format(amount, notation.brazilian)
+//// notation.format(amount, notation.pt_br)
 //// // -> "1.234.567,89"
-//// notation.parse("1.234,5", notation.brazilian)
+//// notation.parse("1.234,5", notation.pt_br)
 //// // -> Ok(1234.5)
 //// ```
 ////
@@ -26,6 +28,7 @@ import glecimal.{
   type Decimal, type ParseError, EmptyText, InvalidGrouping, MissingDigits,
   TextTooLong, TooManyDigits, TooManyFractionDigits, UnexpectedCharacter,
 }
+import glecimal/internal/locales
 
 /// The separators a text uses: a decimal separator, and a group separator
 /// between thousands, or none.
@@ -42,10 +45,30 @@ pub type NotationError {
   SameSeparators
 }
 
-/// `1.234.567,89`: Brazil, and most of continental Europe.
+/// `1.234.567,89`: Brazilian Portuguese (`pt-BR`).
+pub const pt_br = Notation(decimal_separator: ",", group_separator: ".")
+
+/// `1,234,567.89`: United States English (`en-US`).
+pub const en_us = Notation(decimal_separator: ".", group_separator: ",")
+
+/// `1,234,567.89`: British English (`en-GB`).
+pub const en_gb = Notation(decimal_separator: ".", group_separator: ",")
+
+/// `1.234.567,89`: German in Germany (`de-DE`).
+pub const de_de = Notation(decimal_separator: ",", group_separator: ".")
+
+/// `1 234 567,89` with narrow no-break spaces: French in France (`fr-FR`).
+pub const fr_fr = Notation(decimal_separator: ",", group_separator: "\u{202F}")
+
+/// `1'234'567.89`: German in Switzerland (`de-CH`).
+pub const de_ch = Notation(decimal_separator: ".", group_separator: "'")
+
+/// `1.234.567,89`: the separators of Brazil and much of Europe.
+@deprecated("Use notation.pt_br, or for_locale with the reader's locale")
 pub const brazilian = Notation(decimal_separator: ",", group_separator: ".")
 
-/// `1,234,567.89`: English-speaking countries.
+/// `1,234,567.89`: the separators of English-speaking countries.
+@deprecated("Use notation.en_us, or for_locale with the reader's locale")
 pub const english = Notation(decimal_separator: ".", group_separator: ",")
 
 /// `1234567.89`: the canonical text, ungrouped.
@@ -82,6 +105,35 @@ fn check_separator(separator: String) -> Result(Nil, NotationError) {
     _ -> Error(InvalidSeparator(separator))
   }
 }
+
+/// The notation CLDR gives a locale, from its BCP 47 tag: `"pt-BR"`,
+/// `"fr-FR"`, `"de"`. Case does not matter, and `_` may stand for `-`, so a
+/// POSIX name such as `pt_BR` works too.
+///
+/// A locale is in the table only when CLDR's formatting of it is exactly
+/// what a notation produces: Latin digits, a group every three digits from
+/// the fourth, and an ASCII minus. Others return `Error(Nil)`, among them
+/// `es-ES`, `it-IT` and `pt-PT` (no group under five digits), `en-IN`
+/// (groups of two) and `sv-SE` (a Unicode minus). There is no fallback from
+/// a region to its language, since `pt-AO` and `pt` write numbers
+/// differently; choose a fallback yourself, such as `plain`.
+pub fn for_locale(tag: String) -> Result(Notation, Nil) {
+  tag
+  |> string.lowercase
+  |> string.replace("_", "-")
+  |> locales.separators
+  |> result.map(fn(separators) {
+    Notation(decimal_separator: separators.0, group_separator: separators.1)
+  })
+}
+
+/// Every tag `for_locale` knows, as CLDR writes it.
+pub fn locales() -> List(String) {
+  locales.tags()
+}
+
+/// The CLDR release behind `for_locale` and the locale constants.
+pub const cldr_version = locales.cldr_version
 
 /// A sentence for logs and messages.
 pub fn describe_error(error: NotationError) -> String {
@@ -134,13 +186,16 @@ fn group(digits: String, separator: String) -> String {
 }
 
 /// Reads `-?digits(decimal-separator digits)?`, where the integer digits are
-/// either ungrouped or grouped in threes. The scale is kept as written, so
+/// either ungrouped or grouped in threes. Where the group separator is a
+/// space, any space counts as one (a plain, no-break or narrow no-break
+/// space), and where it is an apostrophe, either `'` or `’` does, since
+/// people type the plain character. The scale is kept as written, so
 /// `"1.234,50"` is `1234.50` in the Brazilian notation.
 ///
 /// ```gleam
-/// notation.parse("1.234,56", notation.brazilian)  // -> Ok(1234.56)
-/// notation.parse("1234,56", notation.brazilian)   // -> Ok(1234.56)
-/// notation.parse("12.34,5", notation.brazilian)
+/// notation.parse("1.234,56", notation.pt_br)  // -> Ok(1234.56)
+/// notation.parse("1234,56", notation.pt_br)   // -> Ok(1234.56)
+/// notation.parse("12.34,5", notation.pt_br)
 /// // -> Error(InvalidGrouping(position: 2))
 /// ```
 pub fn parse(text: String, notation: Notation) -> Result(Decimal, ParseError) {
@@ -191,16 +246,18 @@ fn scan_whole(
   case lead, rest {
     "", [] -> Error(MissingDigits(position))
     "", [character, ..] -> Error(UnexpectedCharacter(position, character))
-    // A first group of more than three digits, or one that starts with a
-    // zero (`0.500`, `01.234`), is not a grouped number.
-    "0" <> _, [separator, ..] if separator == notation.group_separator ->
-      Error(InvalidGrouping(after_lead))
-    _, [separator, ..] if separator == notation.group_separator ->
-      case after_lead - position > 3 {
-        True -> Error(InvalidGrouping(after_lead))
-        False -> scan_groups(rest, after_lead, lead, notation)
+    _, [next, ..] ->
+      case is_group_separator(next, notation) {
+        // A first group of more than three digits, or one that starts with
+        // a zero (`0.500`, `01.234`), is not a grouped number.
+        True ->
+          case lead, after_lead - position > 3 {
+            "0" <> _, _ | _, True -> Error(InvalidGrouping(after_lead))
+            _, False -> scan_groups(rest, after_lead, lead, notation)
+          }
+        False -> Ok(#(lead, after_lead, rest))
       }
-    _, _ -> Ok(#(lead, after_lead, rest))
+    _, [] -> Ok(#(lead, after_lead, rest))
   }
 }
 
@@ -212,14 +269,45 @@ fn scan_groups(
   notation: Notation,
 ) -> Result(#(String, Int, List(String)), ParseError) {
   case graphemes {
-    [separator, ..after] if separator == notation.group_separator -> {
-      let #(group, end, rest) = scan_digits(after, position + 1, "")
-      case end - position - 1 == 3 {
-        True -> scan_groups(rest, end, digits <> group, notation)
-        False -> Error(InvalidGrouping(position))
+    [separator, ..after] ->
+      case is_group_separator(separator, notation) {
+        True -> {
+          let #(group, end, rest) = scan_digits(after, position + 1, "")
+          case end - position - 1 == 3 {
+            True -> scan_groups(rest, end, digits <> group, notation)
+            False -> Error(InvalidGrouping(position))
+          }
+        }
+        False -> Ok(#(digits, position, graphemes))
       }
-    }
-    _ -> Ok(#(digits, position, graphemes))
+    [] -> Ok(#(digits, position, graphemes))
+  }
+}
+
+/// Whether a typed character is the notation's group separator, counting
+/// every space as a space and either apostrophe as an apostrophe.
+fn is_group_separator(grapheme: String, notation: Notation) -> Bool {
+  let separator = notation.group_separator
+  case separator {
+    "" -> False
+    _ ->
+      grapheme == separator
+      || { is_space(separator) && is_space(grapheme) }
+      || { is_apostrophe(separator) && is_apostrophe(grapheme) }
+  }
+}
+
+fn is_space(grapheme: String) -> Bool {
+  case grapheme {
+    " " | "\u{00A0}" | "\u{202F}" | "\u{2009}" -> True
+    _ -> False
+  }
+}
+
+fn is_apostrophe(grapheme: String) -> Bool {
+  case grapheme {
+    "'" | "\u{2019}" -> True
+    _ -> False
   }
 }
 

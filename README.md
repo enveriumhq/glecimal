@@ -222,28 +222,50 @@ money.convert(price, to: currency.usd, at: rate, rounding: HalfEven)
 
 ### Display and forms
 
-`glecimal/notation` writes and reads decimals as people do. Parsing is strict:
-digit groups have exactly three digits or there are none, and a grouped number
-never starts with a zero group. So `0.500` typed into a Brazilian field is
-refused, not read as five hundred.
+`glecimal/notation` writes and reads decimals as people do in each locale.
+A notation is named by its locale's BCP 47 tag, with the separators CLDR (the
+Unicode locale data that browsers use) gives it: constants for common
+locales, and `for_locale` for a tag from a browser or an `Accept-Language`
+header.
 
 ```gleam
 import glecimal/notation
 
-notation.format(amount, notation.brazilian)        // -> "1.234.567,89"
-notation.format(amount, notation.english)          // -> "1,234,567.89"
-notation.parse("1.234,56", notation.brazilian)     // -> Ok(1234.56)
-notation.parse("1234,56", notation.brazilian)      // -> Ok(1234.56)
-notation.parse("12.34,5", notation.brazilian)      // -> Error(InvalidGrouping(position: 2))
-notation.parse("0.500", notation.brazilian)        // -> Error(InvalidGrouping(position: 1))
+notation.format(amount, notation.pt_br)            // -> "1.234.567,89"
+notation.format(amount, notation.en_us)            // -> "1,234,567.89"
+notation.format(amount, notation.de_ch)            // -> "1'234'567.89"
 
-let assert Ok(swiss) = notation.new(decimal_separator: ".", group_separator: "'")
+notation.for_locale("fr-FR")                       // -> Ok(notation.fr_fr)
+notation.for_locale("es-ES")                       // -> Error(Nil)
+```
+
+The constants are `pt_br`, `en_us`, `en_gb`, `de_de`, `fr_fr` and `de_ch`;
+`for_locale` knows 81 locales (`notation.locales()`, from CLDR 48). A locale
+is there only when a notation reproduces CLDR's formatting exactly, so some
+are not: `es-ES`, `it-IT` and `pt-PT` leave four-digit numbers ungrouped,
+`en-IN` groups in twos, and `sv-SE` writes a Unicode minus. `for_locale`
+returns `Error(Nil)` for those rather than guess; fall back to `plain` or to a
+notation from `notation.new`.
+
+Parsing is strict: digit groups have exactly three digits or there are none,
+and a grouped number never starts with a zero group. So `0.500` typed into a
+Brazilian field is refused, not read as five hundred. Where a locale groups
+with a space or an apostrophe, any space or either apostrophe that people type
+counts.
+
+```gleam
+notation.parse("1.234,56", notation.pt_br)         // -> Ok(1234.56)
+notation.parse("1234,56", notation.pt_br)          // -> Ok(1234.56)
+notation.parse("12.34,5", notation.pt_br)          // -> Error(InvalidGrouping(position: 2))
+notation.parse("0.500", notation.pt_br)            // -> Error(InvalidGrouping(position: 1))
+notation.parse("1 234,5", notation.fr_fr)          // -> Ok(1234.5)
 ```
 
 A notation carries separators only: add the currency symbol yourself.
-`money.format(price, notation.brazilian)` writes a `Money` amount at its
+`money.format(price, notation.pt_br)` writes a `Money` amount at its
 currency's scale (`1.234,50`); a plain decimal formats at its own scale, so
-`rescale` it to two places first.
+`rescale` it to two places first. `notation.brazilian` and `notation.english`
+from 1.0 still work, deprecated in favour of `pt_br` and `en_us`.
 
 ### JSON
 

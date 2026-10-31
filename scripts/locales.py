@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+"""Generate src/glecimal/internal/locales.gleam, the separators behind
+glecimal/notation's for_locale, from CLDR.
+
+scripts/locales.tsv pins the table: for each BCP 47 tag, the decimal and
+group separators that CLDR gives it. Only locales that the notation model
+reproduces exactly are kept: Latin digits, a group every three digits from
+the fourth, and an ASCII minus. --refresh asks Node's Intl.NumberFormat
+(which carries CLDR) about every candidate, formats six sample values both
+ways, and keeps a locale only when every sample matches.
+
+    scripts/locales.py             regenerate locales.gleam from the TSV
+    scripts/locales.py --check     fail if locales.gleam differs
+    scripts/locales.py --refresh   ask Node's CLDR again and rewrite the TSV
+"""
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+TABLE = ROOT / "scripts" / "locales.tsv"
+OUTPUT = ROOT / "src" / "glecimal" / "internal" / "locales.gleam"
+
+CANDIDATES = """
+af-ZA bg-BG ca-ES cs-CZ da-DK de de-AT de-BE de-CH de-DE de-LI de-LU el-GR
+en en-AU en-CA en-GB en-IE en-IN en-NZ en-PH en-SG en-US en-ZA es es-AR
+es-BO es-CL es-CO es-CR es-DO es-EC es-ES es-GT es-HN es-MX es-NI es-PA
+es-PE es-PR es-PY es-SV es-US es-UY es-VE et-EE eu-ES fi-FI fil-PH fr
+fr-BE fr-CA fr-CH fr-FR fr-LU fr-MA fr-SN ga-IE gl-ES he-IL hi-IN hr-HR
+hu-HU id-ID is-IS it it-CH it-IT ja ja-JP ko ko-KR lt-LT lv-LV mk-MK
+ms-MY mt-MT nb-NO nl nl-BE nl-NL pl-PL pt pt-AO pt-BR pt-MZ pt-PT ro-RO
+ru-RU sk-SK sl-SI sq-AL sr-Latn-RS sv-SE sw-KE th-TH tr-TR uk-UA vi-VN
+zh zh-CN zh-HK zh-SG zh-TW
+""".split()
+
+SAMPLES = [1234.5, 12.5, 0.5, 1000000, 1234567.89, -1234.5]
+
+ASK_INTL = """
+const tags = JSON.parse(process.argv[1]);
+const samples = JSON.parse(process.argv[2]);
+const locales = tags.map((tag) => {
+  const format = new Intl.NumberFormat(tag, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  const options = format.resolvedOptions();
+  const parts = format.formatToParts(1234567.89);
+  const symbol = (type) => (parts.find((part) => part.type === type) || {value: ""}).value;
+  return {tag, resolved: options.locale, digits: options.numberingSystem,
+          decimal: symbol("decimal"), group: symbol("group"),
+          samples: samples.map((value) => format.format(value))};
+});
+console.log(JSON.stringify({cldr: process.versions.cldr, icu: process.versions.icu, locales}));
+"""
+
+
+def ours(value: float, decimal: str, group: str) -> str:
+    """How glecimal/notation formats `value` at two places."""
+    text = f"{abs(value):.2f}"
+    whole, fraction = text.split(".")
+    groups = []
+    while len(whole) > 3:
+        groups.insert(0, whole[-3:])
+        whole = whole[:-3]
+    groups.insert(0, whole)
+    sign = "-" if value < 0 else ""
+    return sign + group.join(groups) + decimal + fraction
+
+
+def codepoints(text: str) -> str:
+    return " ".join(f"U+{ord(c):04X}" for c in text)
+
+
+def characters(field: str) -> str:
+    return "".join(chr(int(code[2:], 16)) for code in field.split())
+
+
+def refresh() -> None:
+    answer = subprocess.run(
+        ["node", "-e", ASK_INTL, json.dumps(CANDIDATES), json.dumps(SAMPLES)],
+        capture_output=True, text=True, check=True,
+    )
+    data = json.loads(answer.stdout)
+    kept, dropped = [], []
+    for locale in data["locales"]:
+        faithful = (
+            locale["resolved"] == locale["tag"]
+            and locale["digits"] == "latn"
+            and len(locale["decimal"]) == 1
+            and len(locale["group"]) == 1
+            and all(
+                got == ours(value, locale["decimal"], locale["group"])
+                for value, got in zip(SAMPLES, locale["samples"])
+            )
+        )
+        (kept if faithful else dropped).append(locale)
+    lines = [f"# CLDR {data['cldr']} (ICU {data['icu']}): tag, decimal separator, group separator"]
+    lines += [
+        f"{l['tag']}\t{codepoints(l['decimal'])}\t{codepoints(l['group'])}"
+        for l in sorted(kept, key=lambda l: l["tag"].lower())
+    ]
+    TABLE.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"kept {len(kept)} locales, dropped {len(dropped)}:")
+    for l in dropped:
+        print(f"  {l['tag']}: {l['samples'][0]!r} {l['samples'][-1]!r} ({l['digits']}, resolved {l['resolved']})")
+
+
+def read_table() -> tuple:
+    header, *rows = TABLE.read_text(encoding="utf-8").splitlines()
+    cldr = header.split()[2]
+    return cldr, [row.split("\t") for row in rows]
+
+
+def gleam_string(text: str) -> str:
+    out = ""
+    for c in text:
+        out += c if 0x20 <= ord(c) < 0x7F and c not in '"\\' else f"\\u{{{ord(c):04X}}}"
+    return f'"{out}"'
+
+
+def render() -> str:
+    cldr, rows = read_table()
+    out = [
+        "//// The decimal and group separators of the locales that",
+        "//// glecimal/notation reproduces exactly, from CLDR "
+        + cldr + ": " + str(len(rows)) + " locales.",
+        "////",
+        "//// Generated by scripts/locales.py from scripts/locales.tsv; do not edit.",
+        "",
+        "/// The CLDR release the table follows.",
+        f'pub const cldr_version = "{cldr}"',
+        "",
+        "/// The separators for a lower-case tag with hyphens, such as `pt-br`.",
+        "pub fn separators(tag: String) -> Result(#(String, String), Nil) {",
+        "  case tag {",
+    ]
+    for tag, decimal, group in rows:
+        out.append(
+            f'    "{tag.lower()}" -> Ok(#({gleam_string(characters(decimal))}, '
+            f"{gleam_string(characters(group))}))"
+        )
+    out += ["    _ -> Error(Nil)", "  }", "}", "", "/// Every tag in the table, as CLDR writes it.",
+            "pub fn tags() -> List(String) {", "  ["]
+    out += [f'    "{tag}",' for tag, *_ in rows]
+    out += ["  ]", "}"]
+    return formatted("\n".join(out) + "\n")
+
+
+def formatted(source: str) -> str:
+    return subprocess.run(
+        ["gleam", "format", "--stdin"], input=source, capture_output=True,
+        text=True, check=True,
+    ).stdout
+
+
+def main() -> int:
+    if sys.argv[1:] == ["--refresh"]:
+        refresh()
+    rendered = render()
+    if sys.argv[1:] == ["--check"]:
+        if OUTPUT.read_text(encoding="utf-8") != rendered:
+            print(f"{OUTPUT} is stale: run scripts/locales.py", file=sys.stderr)
+            return 1
+        return 0
+    OUTPUT.write_text(rendered, encoding="utf-8")
+    print(f"wrote {OUTPUT}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
