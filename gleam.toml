@@ -1,0 +1,23 @@
+name = "glecimal"
+version = "1.0.0"
+target = "erlang"
+gleam = ">= 1.11.0"
+
+description = "Exact decimals for money and audit: 128 digits on Erlang and JavaScript, no floats, no panics, and every rounding named."
+
+licences = ["Apache-2.0"]
+
+repository = { type = "github", user = "enveriumhq", repo = "glecimal" }
+links = [
+  { title = "Repository", href = "https://github.com/enveriumhq/glecimal" },
+  { title = "Roadmap", href = "https://github.com/enveriumhq/glecimal/blob/main/ROADMAP.md" },
+]
+
+[dependencies]
+gleam_stdlib = ">= 0.60.0 and < 2.0.0"
+
+[dev_dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"
+qcheck = ">= 1.0.0 and < 2.0.0"
+simplifile = ">= 2.0.0 and < 3.0.0"
+gleam_json = ">= 3.0.0 and < 4.0.0"

@@ -1,0 +1,2 @@
+# gleam baseline: rule, file, count, reason. Counts only fall;
+# growth goes through --accept with a reason, in its own reviewed commit.
