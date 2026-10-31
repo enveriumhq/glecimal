@@ -5,7 +5,7 @@
 
 **A pure-Gleam exact-decimal library for money and audit.** Parse, compute,
 round, allocate, convert and format amounts, with the same 128-digit results on
-Erlang and JavaScript.
+Erlang and JavaScript. The guide is at [glecimal.com](https://glecimal.com).
 
 - **Exact, or explicit about it.** Addition, subtraction and multiplication are
   exact. Division, rounding and powers take the scale to keep and a named
@@ -326,5 +326,5 @@ Apache-2.0.
 
 ## About
 
-glecimal is built and maintained by [Enverium](https://enverium.com), a
+glecimal is built and maintained by [Enverium](https://www.enverium.com/), a
 sustainability reporting platform, for its audit-grade applications.

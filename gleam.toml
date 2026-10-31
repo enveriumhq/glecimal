@@ -9,9 +9,10 @@ licences = ["Apache-2.0"]
 
 repository = { type = "github", user = "enveriumhq", repo = "glecimal" }
 links = [
+  { title = "Website", href = "https://glecimal.com" },
   { title = "Repository", href = "https://github.com/enveriumhq/glecimal" },
   { title = "Roadmap", href = "https://github.com/enveriumhq/glecimal/blob/main/ROADMAP.md" },
-  { title = "Enverium", href = "https://enverium.com" },
+  { title = "Enverium", href = "https://www.enverium.com/" },
 ]
 
 [dependencies]

@@ -7,11 +7,56 @@
 <meta name="description" content="glecimal is a pure-Gleam library of exact decimals for money and audit: no floats, every rounding named, the same results on Erlang and JavaScript.">
 <link rel="canonical" href="https://glecimal.com/">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/style.css">
+<meta name="theme-color" content="#f2f6f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#142019" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="glecimal">
 <meta property="og:url" content="https://glecimal.com/">
 <meta property="og:title" content="glecimal: exact decimals for Gleam">
 <meta property="og:description" content="Exact decimals for money and audit, in pure Gleam: no floats, every rounding named, the same results on Erlang and JavaScript.">
+<meta property="og:image" content="https://glecimal.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="0.1 plus 0.2 as a ledger sum: exactly 0.3 in glecimal, 0.30000000000000004 as a float.">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareSourceCode",
+  "name": "glecimal",
+  "description": "A pure-Gleam library of exact decimals for money and audit: no floats, every rounding named, the same results on Erlang and JavaScript.",
+  "url": "https://glecimal.com/",
+  "codeRepository": "https://github.com/enveriumhq/glecimal",
+  "programmingLanguage": {
+    "@type": "ComputerLanguage",
+    "name": "Gleam",
+    "url": "https://gleam.run/"
+  },
+  "runtimePlatform": [
+    "Erlang",
+    "JavaScript"
+  ],
+  "license": "https://www.apache.org/licenses/LICENSE-2.0",
+  "sameAs": [
+    "https://hex.pm/packages/glecimal",
+    "https://hexdocs.pm/glecimal/",
+    "https://github.com/enveriumhq/glecimal"
+  ],
+  "creator": {
+    "@type": "Organization",
+    "name": "Enverium",
+    "url": "https://www.enverium.com/",
+    "description": "A sustainability reporting platform."
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Enverium",
+    "url": "https://www.enverium.com/"
+  }
+}
+</script>
 <meta name="color-scheme" content="light dark">
 </head>
 <body>
@@ -189,7 +234,7 @@ notation.parse("0.500", notation.brazilian)      // -&gt; Error(InvalidGrouping(
     <li><a href="https://hexdocs.pm/glecimal/">Documentation</a></li>
     <li><a href="https://github.com/enveriumhq/glecimal">Source</a></li>
   </ul>
-  <p>glecimal is free software under the Apache 2.0 licence. It is built and maintained by <a href="https://enverium.com">Enverium</a>, a sustainability reporting platform, for its audit-grade applications.</p>
+  <p>glecimal is free software under the Apache 2.0 licence. It is built and maintained by <a href="https://www.enverium.com/">Enverium</a>, a sustainability reporting platform, for its audit-grade applications.</p>
 </footer>
 </body>
 </html>
